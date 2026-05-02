@@ -26,7 +26,7 @@ async def on_message(message):
                 "url": a.url
             })
 
-        requests.post("http://192.168.1.3:5010/message", json={
+        requests.post("http://IP_TO_FLASKSERVER:5000/message", json={
             "user_id": str(message.author.id),
             "content": message.content,
             "origin": "discord",
