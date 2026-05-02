@@ -2,6 +2,9 @@
 
 Ce projet est un **dashboard web connecté à un bot Discord**, permettant de gérer et consulter les messages privés (DM) dans une interface moderne type messagerie (style Discord).
 
+<img width="1917" height="961" alt="image" src="https://github.com/user-attachments/assets/e5aadefd-51a4-4856-8f61-5db42c31076e" />
+
+
 ## 🚀 Installation
 
 Les messages privés envoyés au bot sont automatiquement interceptés grâce à l’événement Discord `on_message`.  
