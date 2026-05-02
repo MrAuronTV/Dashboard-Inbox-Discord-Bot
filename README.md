@@ -110,3 +110,7 @@ Créer une **interface centralisée de gestion des messages Discord**, permettan
 
 Ce projet est en **constante évolution**.  
 De nouvelles fonctionnalités et améliorations sont régulièrement ajoutées afin d’améliorer les performances, l’interface et l’expérience utilisateur.
+
+## 🛠️ Support
+
+Discord : https://discord.gg/dDUXt2J
