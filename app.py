@@ -9,6 +9,7 @@ import threading
 import asyncio
 import websockets
 import urllib3
+import aiohttp
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
@@ -21,6 +22,7 @@ UPLOADS_PATH = "/PATH_TO_UPLOADS_SAVED//uploads"
 URL_IMAGE = "http://URL_uploads/{}"
 DISCORD_BOT_TOKEN = "YOUR_TOKEN_DISCORD_BOT"
 DISCORD_GUILD_ID = "YOUR_DISCORD_GUILD_ID"
+MISTRAL_API_KEY = "YOUR_MISTRAL_API_KEY"
 
 ###########################
 
@@ -190,6 +192,34 @@ def message():
 
     messages.setdefault(user_id, []).append(msg)
     save()
+    if author == "user" and content:
+
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            ai_reply = loop.run_until_complete(get_ai_response(content))
+
+            if ai_reply:
+
+                ai_msg = {
+                    "user_id": user_id,
+                    "username": "Assistant",
+                    "avatar": "https://cdn-icons-png.flaticon.com/512/4712/4712027.png",
+                    "author": "bot",
+                    "content": ai_reply,
+                    "image": None,
+                    "timestamp": time.time()
+                }
+
+                messages.setdefault(user_id, []).append(ai_msg)
+                save()
+
+                # 📩 envoyer sur Discord aussi
+                send_dm_discord(int(user_id), ai_reply)
+
+        except Exception as e:
+            print("AI ERROR:", e)
 
     if origin == "dashboard":
         send_dm_discord(int(user_id), content)
@@ -361,6 +391,53 @@ def delete_conversation():
         print("🗑️ Conversation supprimée:", user_id)
 
     return jsonify({"ok": True})
+
+
+# -----------------------
+# AUTO RESPONSE
+# -----------------------
+
+async def get_ai_response(message_content):
+
+    # ✅ condition : uniquement question
+    if "?" not in message_content:
+        return None
+
+    # ✅ anti spam (optionnel)
+    if len(message_content) > 200:
+        return None
+
+    url = "https://api.mistral.ai/v1/chat/completions"
+
+    payload = {
+        "model": "mistral-small-latest",
+        "messages": [
+            {
+            "role": "system",
+            "content": """
+            Tu es l'assistant du serveur Discord de Auron.
+
+            Tu aides les utilisateurs du bot dashboard et Discord.
+            Tu représentes un assistant communautaire.
+            """
+            },
+            {
+                "role": "user",
+                "content": message_content
+            }
+        ]
+    }
+
+    headers = {
+        "Authorization": "Bearer {}".format(MISTRAL_API_KEY),
+        "Content-Type": "application/json"
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as resp:
+            data = await resp.json()
+            print("MISTRAL RESPONSE:", data)
+            return data["choices"][0]["message"]["content"]
     
 # -----------------------
 # RUN
