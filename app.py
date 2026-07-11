@@ -415,7 +415,7 @@ async def get_ai_response(message_content):
             {
             "role": "system",
             "content": """
-            Tu es l'assistant du serveur Discord de Auron.
+            Tu es l'assistant du serveur Discord.
 
             Tu aides les utilisateurs du bot dashboard et Discord.
             Tu représentes un assistant communautaire.
