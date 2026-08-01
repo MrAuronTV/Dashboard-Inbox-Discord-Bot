@@ -1036,14 +1036,74 @@ document.addEventListener("click", function(e) {
     }
 });
 
-function uploadFile(event) {
+function compressImage(file, maxDimension = 1920, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+
+        // gifs animés : on ne touche pas, sinon on perd l'animation
+        if (file.type === "image/gif") {
+            resolve(file);
+            return;
+        }
+
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            img.onload = () => {
+                let { width, height } = img;
+
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round(height * (maxDimension / width));
+                        width = maxDimension;
+                    } else {
+                        width = Math.round(width * (maxDimension / height));
+                        height = maxDimension;
+                    }
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        resolve(file); // fallback si échec
+                        return;
+                    }
+
+                    const compressedFile = new File(
+                        [blob],
+                        file.name.replace(/\.[^/.]+$/, "") + ".jpg",
+                        { type: "image/jpeg" }
+                    );
+
+                    resolve(compressedFile);
+                }, "image/jpeg", quality);
+            };
+
+            img.onerror = () => resolve(file); // fallback si échec
+            img.src = e.target.result;
+        };
+
+        reader.onerror = () => resolve(file); // fallback si échec
+        reader.readAsDataURL(file);
+    });
+}
+
+async function uploadFile(event) {
     if (!currentUser) return;
 
     const file = event.target.files[0];
     if (!file) return;
 
+    const compressedFile = await compressImage(file);
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressedFile);
     formData.append("user_id", currentUser);
 
     fetch("/upload_image", {
@@ -1056,7 +1116,7 @@ function uploadFile(event) {
             loadMessages();
             loadConversations();
         } else {
-            alert("Erreur upload");
+            alert("Erreur upload: " + (data.error || "inconnue"));
         }
     })
     .catch(() => {
